@@ -557,22 +557,12 @@
 
       var staticVar = "";
 
-      vars = vars.replace(/final\s+var\s+(\w+\s*=\s*.*?;)/g, function(all, setting) {
-        staticVar += " " + name + "." + setting;
-        return "";
-      });
-
-
-      // Move arguments up from constructor and wrap contents with
-      // a with(this), and unwrap constructor
-      return "function " + name + "() {with(this){\n " + 
-              (extend ? "var __self=this;function superMethod(){extendClass(__self,arguments," + extend + ");}\n" : "") +
-              // Replace var foo = 0; with this.foo = 0;
-              // and force var foo; to become this.foo = null;
-              vars.replace(/\s*,\s*/g, ";\n  this.").replace(/\b(var |final |public )+\s*/g, "this.").replace(/\b(var |final |public )+\s*/g, "this.").replace(/this\.(\w+);/g, "this.$1 = null;") + 
-              (extend ? "extendClass(this, " + extend + ");\n" : "") + 
-              "<CLASS " + name + " " + staticVar + ">" + 
-              (typeof last === "string" ? last : name + "(");
+      // Move arguments up from constructor and unwrap constructor
+      return "function " + name + "() {\nvar private = {};\n " + 
+        (extend ? "var __self=this;function superMethod(){extendClass(__self,arguments," + 
+        extend + ");}\n" : "") + 
+        (extend ? "extendClass(this, " + extend + ");\n" : "") + 
+        "<CLASS " + name + " " + staticVar + ">";
     };
 
     var nextBrace = function(right) {
@@ -599,66 +589,154 @@
       return right.slice(0, position - 1);
     };
 
-    var matchClasses = /(?:public |abstract |static )*class (\w+)\s*(?:extends\s*(\w+)\s*)?\{\s*((?:.|\n)*?)\b\1\s*\(/g;
-    var matchNoCon = /(?:public |abstract |static )*class (\w+)\s*(?:extends\s*(\w+)\s*)?\{\s*((?:.|\n)*?)(processing)/g;
+    var matchClasses = /(?:public |abstract |static )*class\s+(\w+)\s*(?:extends\s*(\w+)\s*)?\{/g;
 
     aCode = aCode.replace(matchClasses, classReplace);
-    aCode = aCode.replace(matchNoCon, classReplace);
 
     var matchClass = /<CLASS (\w+) (.*?)>/,
       m;
-
+    // Extract and manage classes
     while ((m = aCode.match(matchClass))) {
       var left = RegExp.leftContext,
         allRest = RegExp.rightContext,
         rest = nextBrace(allRest),
         className = m[1],
         staticVars = m[2] || "";
-
+      
       allRest = allRest.slice(rest.length + 1);
 
-      rest = (function() {
-        return rest.replace(new RegExp("\\b" + className + "\\(([^\\)]*?)\\)\\s*{", "g"), function(all, args) {
-          args = args.split(/,\s*?/);
+      var matchConstructor = new RegExp("\\b" + className + "\\s*\\(([^\\)]*?)\\)\\s*{"),
+        c;
+      var constructors = "";
 
-          if (args[0].match(/^\s*$/)) {
-            args.shift();
-          }
+      // Extract all constructors and put them into the variable "constructors"
+      while ((c = rest.match(matchConstructor))) {
+        var prev = RegExp.leftContext,
+          allNext = RegExp.rightContext,
+          next = nextBrace(allNext),
+          args = c[1];
+          
+        args = args.split(/,\s*?/);
 
-          var fn = "if ( arguments.length === " + args.length + " ) {\n";
+        if (args[0].match(/^\s*$/)) {
+          args.shift();
+        }
+        
+        constructors += "if ( arguments.length === " + args.length + " ) {\n";
 
-          for (var i = 0; i < args.length; i++) {
-            fn += " var " + args[i] + " = arguments[" + i + "];\n";
-          }
+        for (var i = 0; i < args.length; i++) {
+          constructors += " var " + args[i] + " = arguments[" + i + "];\n";
+        }
+        
+        constructors += next + "}\n";
 
-          return fn;
-        });
-      }());
+        rest = prev + allNext.slice(next.length + 1);
+      }
+
+      var privateFunctions = "";
+      var publicFunctions = "";
 
       // Fix class method names
       // this.collide = function() { ... }
-      // and add closing } for with(this) ...
-      rest = (function() {
-        return rest.replace(/(?:public )?processing.\w+ = function (\w+)\((.*?)\)/g, function(all, name, args) {
+      rest = (function() { return rest.replace(/(?:(public|private)\s+)?processing.\w+\s*=\s*function\s+(\w+)\((.*?)\)/g, function (all, access, name, args) {
+        if (access === "private") {
+          privateFunctions += name + "|";
+          return "ADDMETHOD(private, '" + name + "', function(" + args + ")";
+        } else {
+          publicFunctions += name + "|";
           return "ADDMETHOD(this, '" + name + "', function(" + args + ")";
-        });
-      }());
+        }
+      }); }());
 
-      var matchMethod = /ADDMETHOD([\s\S]*?\{)/, mc, methods = "";
+      // Extract member functions and add them to "methods" variable
+      var matchMethod = /ADDMETHOD([\s\S]*?\{)/,
+        mc;
+      var methods = "";
+      var methodsArray = [];
 
       while ((mc = rest.match(matchMethod))) {
         var prev = RegExp.leftContext,
           allNext = RegExp.rightContext,
           next = nextBrace(allNext);
 
-        methods += "addMethod" + mc[1] + next + "});";
+        methodsArray.push("addMethod" + mc[1] + next + "});");
 
         rest = prev + allNext.slice(next.length + 1);
       }
 
-      rest = methods + rest;
+      var vars = "";
+      var publicVars  = "";
 
-      aCode = left + rest + "\n}}" + staticVars + allRest;
+      // Put all member variables into "vars"
+      // and keep a list of all public variables
+      rest = rest.replace(/(?:(private|public)\s+)?var\s+([\s|\S]*?;)/g, function(all, access, variable) {
+        if (access === "private") {
+          variable = variable.replace(/,\s*/g, ";\nvar ");
+          vars += "var " + variable + '\n';
+        } else {
+          publicVars += variable.replace(/,\s*/g, "\n");
+          variable = variable.replace(/,\s*/g, ";\nthis.");
+          vars += "this." + variable + '\n';
+        }
+
+        // Remove everything but variable names
+        publicVars = publicVars.replace(/\s*(\w+)\s*(;|=).*\s?/g, "$1|")
+        return "";
+      });
+      
+      publicVars += publicFunctions;
+
+      // add this. to public variables used inside member functions, and constructors
+      if (publicVars) {
+        for (var i = 0; i < methodsArray.length; i++) {
+          methodsArray[i] = methodsArray[i].replace(/(addMethod.*?\{)([\s|\S]*\}\);)/g, function(all, header, body) {
+            return header + body.replace(new RegExp("(\\.)?\\b(" + publicVars.substr(0, publicVars.length-1) + ")\\b", "g"), function (all, first, variable) {
+              if (first === ".") {
+                return all;
+              } else {
+                return "this." + variable;
+              }
+            });
+          });
+        }
+        constructors = constructors.replace(new RegExp("(var\\s*?|\\.)?\\b(" + publicVars.substr(0, publicVars.length-1) + ")\\b", "g"), function (all, first, variable) {
+          if (/var\s*?$/.test(first) || first === ".") {
+            return all;
+          } else {
+            return "this." + variable;
+          }
+        });
+      }
+
+	  // Adds private. to all private member functions used inside functions
+      if (privateFunctions) {
+        for (var i = 0; i < methodsArray.length; i++) {
+          methodsArray[i] = methodsArray[i].replace(/(addMethod.*?\{)([\s|\S]*\}\);)/g, function(all, header, body) {
+            return header + body.replace(new RegExp("(\\.)?\\b(" + privateFunctions.substr(0, privateFunctions.length-1) + ")\\b", "g"), function (all, first, variable) {
+              if (first === ".") {
+                return all;
+              } else {
+                return "private." + variable;
+              }
+            });
+          });
+        }
+        constructors = constructors.replace(new RegExp("(var\\s*?|\\.)?\\b(" + privateFunctions.substr(0, privateFunctions.length-1) + ")\\b", "g"), function (all, first, variable) {
+          if (/var\s*?$/.test(first) || first === ".") {
+            return all;
+          } else {
+            return "private." + variable;
+          }
+        });
+      }
+
+      for (var i = 0; i < methodsArray.length; i++){
+        methods += methodsArray[i];
+      }
+
+      rest = methods + vars + constructors;
+
+      aCode = left + rest + "\n}" + staticVars + allRest;
     }
 
     // Do some tidying up, where necessary
