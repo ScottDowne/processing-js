@@ -638,7 +638,7 @@
 
       // Fix class method names
       // this.collide = function() { ... }
-      rest = (function() { return rest.replace(/(?:(public|private)\s+)?processing.\w+\s*=\s*function\s+(\w+)\((.*?)\)/g, function (all, access, name, args) {
+      rest = (function() { return rest.replace(/(?:(public|private)\s+)?processing.\w+\s*=\s*function\s+(\w+)\(([^\)]*?)\)/g, function (all, access, name, args) {
         if (access === "private") {
           privateFunctions += name + "|";
           return "ADDMETHOD(private, '" + name + "', function(" + args + ")";
