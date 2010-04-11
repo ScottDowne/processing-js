@@ -506,7 +506,7 @@
     // float[] foo = new float[5];
     aCode = aCode.replace(/new\s+(\w+)\s*((?:\[(?:[^\]]*)\])+)\s*(\{[^;]*\}\s*;)*/g, function(all, name, args, initVars) {
       if (initVars) {
-        return initVars;
+        return initVars.replace(/\{/g, "[").replace(/\}/g, "]");
       } else {
         return "new ArrayList(" + args.replace(/\[\]/g, "[0]").slice(1, -1).split("][").join(", ") + ");";
       }
@@ -7206,7 +7206,7 @@
         }
 
         var executeSketch = function(processing) {
-          with(processing) {
+          with(processing){
             // Don't start until all specified images in the cache are preloaded
             if (!pjs.imageCache.pending) {
               eval(parsedCode);
