@@ -739,7 +739,7 @@
         });
       }());
     }
-alert(aCode);
+
     return aCode;
   };
 
