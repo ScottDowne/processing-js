@@ -472,9 +472,43 @@
       if (name === "if" || name === "for" || name === "while") {
         return all;
       } else {
-        return "processing." + name + " = function " + name + args;
+        return "PROCESSING." + name + " = function " + name + args;
       }
     });
+	
+	var nextBrace = function(right) {
+      var rest = right,
+        position = 0,
+        leftCount = 1,
+        rightCount = 0;
+
+      while (leftCount !== rightCount) {
+        var nextLeft = rest.indexOf("{"),
+          nextRight = rest.indexOf("}");
+
+        if (nextLeft < nextRight && nextLeft !== -1) {
+          leftCount++;
+          rest = rest.slice(nextLeft + 1);
+          position += nextLeft + 1;
+        } else {
+          rightCount++;
+          rest = rest.slice(nextRight + 1);
+          position += nextRight + 1;
+        }
+      }
+
+      return right.slice(0, position - 1);
+    };
+	
+	var matchMethod = /PROCESSING\.(\w+ = function \w+\([^\)]*\)\s*\{)/, mc;
+
+    while ((mc = aCode.match(matchMethod))) {
+      var prev = RegExp.leftContext,
+        allNext = RegExp.rightContext,
+        next = nextBrace(allNext);
+
+        aCode = prev + "processing." + mc[1] + next + "};" + allNext.slice(next.length + 1);
+    }
 
     // Attach import() to p{} bypassing JS command, allowing for extrernal library loading
     //aCode = aCode.replace(/import \(|import\(/g, "p.Import(");
@@ -575,30 +609,6 @@
               (typeof last === "string" ? last : name + "(");
     };
 
-    var nextBrace = function(right) {
-      var rest = right,
-        position = 0,
-        leftCount = 1,
-        rightCount = 0;
-
-      while (leftCount !== rightCount) {
-        var nextLeft = rest.indexOf("{"),
-          nextRight = rest.indexOf("}");
-
-        if (nextLeft < nextRight && nextLeft !== -1) {
-          leftCount++;
-          rest = rest.slice(nextLeft + 1);
-          position += nextLeft + 1;
-        } else {
-          rightCount++;
-          rest = rest.slice(nextRight + 1);
-          position += nextRight + 1;
-        }
-      }
-
-      return right.slice(0, position - 1);
-    };
-
     var matchClasses = /(?:public |abstract |static )*class (\w+)\s*(?:extends\s*(\w+)\s*)?\{\s*((?:.|\n)*?)\b\1\s*\(/g;
     var matchNoCon = /(?:public |abstract |static )*class (\w+)\s*(?:extends\s*(\w+)\s*)?\{\s*((?:.|\n)*?)(processing)/g;
 
@@ -638,6 +648,7 @@
       // Fix class method names
       // this.collide = function() { ... }
       // and add closing } for with(this) ...
+
       rest = (function() {
         return rest.replace(/(?:public )?processing.\w+ = function (\w+)\((.*?)\)/g, function(all, name, args) {
           return "ADDMETHOD(this, '" + name + "', function(" + args + ")";
