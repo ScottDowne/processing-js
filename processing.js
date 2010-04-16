@@ -496,6 +496,11 @@
       this.toString();
     };
 
+	// changes pixels[n] into a function call pixels(n)
+	aCode = aCode.replace(/pixels\s*\[([^\]]+)\]\s*(=)?(\s*[^;]*);/g, function(all, var1, equals, var2) {
+	  return "pixels(" + var1 + (equals ? ", " + var2 + ");" : ")" + var2 + ";"); 
+	});
+	
     // Force .length() to be .length
     aCode = aCode.replace(/\.length\(\)/g, ".length");
 
@@ -734,7 +739,7 @@
         });
       }());
     }
-
+alert(aCode);
     return aCode;
   };
 
@@ -5779,7 +5784,7 @@
       this.loadPixels = function() {};
 
       this.updatePixels = function() {};
-
+	  
       this.toImageData = function() {
         var imgData = Temporary2DContext.createImageData(this.width, this.height);
         var i, len;
