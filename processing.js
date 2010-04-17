@@ -520,11 +520,9 @@
     // int|float foo;
     var intFloat = /(\s*(?:int|float)\s+(?!\[\])*(?:\s*|[^\(;]*?,\s*))([a-zA-Z]\w*)\s*(,|;)/i;
     while (intFloat.test(aCode)) {
-      aCode = (function() {
-        return aCode.replace(new RegExp(intFloat), function(all, type, name, sep) {
-          return type + " " + name + " = 0" + sep;
-        });
-      }());
+      aCode = aCode.replace(new RegExp(intFloat), function(all, type, name, sep) {
+        return type + " " + name + " = 0" + sep;
+      });
     }
 
     // float foo = 5;
@@ -617,32 +615,28 @@
 
       allRest = allRest.slice(rest.length + 1);
 
-      rest = (function() {
-        return rest.replace(new RegExp("\\b" + className + "\\(([^\\)]*?)\\)\\s*{", "g"), function(all, args) {
-          args = args.split(/,\s*?/);
+      rest = rest.replace(new RegExp("\\b" + className + "\\(([^\\)]*?)\\)\\s*{", "g"), function(all, args) {
+        args = args.split(/,\s*?/);
 
-          if (args[0].match(/^\s*$/)) {
-            args.shift();
-          }
+        if (args[0].match(/^\s*$/)) {
+          args.shift();
+        }
 
-          var fn = "if ( arguments.length === " + args.length + " ) {\n";
+        var fn = "if ( arguments.length === " + args.length + " ) {\n";
 
-          for (var i = 0; i < args.length; i++) {
-            fn += " var " + args[i] + " = arguments[" + i + "];\n";
-          }
+        for (var i = 0; i < args.length; i++) {
+          fn += " var " + args[i] + " = arguments[" + i + "];\n";
+        }
 
-          return fn;
-        });
-      }());
+        return fn;
+      });
 
       // Fix class method names
       // this.collide = function() { ... }
       // and add closing } for with(this) ...
-      rest = (function() {
-        return rest.replace(/(?:public )?processing.\w+ = function (\w+)\((.*?)\)/g, function(all, name, args) {
-          return "ADDMETHOD(this, '" + name + "', function(" + args + ")";
-        });
-      }());
+      rest = rest.replace(/(?:public )?processing.\w+ = function (\w+)\((.*?)\)/g, function(all, name, args) {
+        return "ADDMETHOD(this, '" + name + "', function(" + args + ")";
+      });
 
       var matchMethod = /ADDMETHOD([\s\S]*?\{)/, mc, methods = "";
 
@@ -699,40 +693,38 @@
 
     // replaces all masked strings from <STRING n> to the appropriate string contained in the strings array
     for (var n = 0; n < strings.length; n++) {
-      aCode = (function() {
-        return aCode.replace(new RegExp("(.*)(<STRING " + n + ">)(.*)", "g"), function(all, quoteStart, match, quoteEnd) {
-          var returnString = all,
-            notString = true,
-            quoteType = "",
-            escape = false;
+      aCode = aCode.replace(new RegExp("(.*)(<STRING " + n + ">)(.*)", "g"), function(all, quoteStart, match, quoteEnd) {
+        var returnString = all,
+          notString = true,
+          quoteType = "",
+          escape = false;
 
-          for (var x = 0; x < quoteStart.length; x++) {
-            if (notString) {
-              if (quoteStart.charAt(x) === "\"" || quoteStart.charAt(x) === "'") {
-                quoteType = quoteStart.charAt(x);
-                notString = false;
+        for (var x = 0; x < quoteStart.length; x++) {
+          if (notString) {
+            if (quoteStart.charAt(x) === "\"" || quoteStart.charAt(x) === "'") {
+              quoteType = quoteStart.charAt(x);
+              notString = false;
+            }
+          } else {
+            if (!escape) {
+              if (quoteStart.charAt(x) === "\\") {
+                escape = true;
+              } else if (quoteStart.charAt(x) === quoteType) {
+                notString = true;
+                quoteType = "";
               }
             } else {
-              if (!escape) {
-                if (quoteStart.charAt(x) === "\\") {
-                  escape = true;
-                } else if (quoteStart.charAt(x) === quoteType) {
-                  notString = true;
-                  quoteType = "";
-                }
-              } else {
-                escape = false;
-              }
+              escape = false;
             }
           }
+        }
 
-          if (notString) { // Match is not inside a string
-            returnString = quoteStart + strings[n] + quoteEnd;
-          }
+        if (notString) { // Match is not inside a string
+          returnString = quoteStart + strings[n] + quoteEnd;
+        }
 
-          return returnString;
-        });
-      }());
+        return returnString;
+      });
     }
 
     return aCode;
