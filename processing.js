@@ -609,6 +609,29 @@
 
       allRest = allRest.slice(rest.length + 1);
 
+      // Fix class method names
+      // this.collide = function() { ... }
+      rest = (function() {
+        return rest.replace(/(?:public\s+)?processing.\w+ = function (\w+)\((.*?)\)/g, function(all, name, args) {
+          return "ADDMETHOD(this, '" + name + "', (function(public) { return function(" + args + ")";
+        });
+      }());
+
+      var matchMethod = /ADDMETHOD([^,]+, \s*?')([^']*)('[\s\S]*?\{[\s\S]*?\{)/,
+          mc,
+          methods = "",
+          methodsArray = [];
+
+      while ((mc = rest.match(matchMethod))) {
+        var prev = RegExp.leftContext,
+            allNext = RegExp.rightContext,
+            next = nextBrace(allNext);
+
+        methodsArray.push("addMethod" + mc[1] + mc[2] + mc[3] + next + "};})(this));" + "var " + mc[2] + " = this." + mc[2] + ";\n");
+
+        rest = prev + allNext.slice(next.length + 1);
+      }
+      
       var matchConstructor = new RegExp("\\b" + className + "\\s*\\(([^\\)]*?)\\)\\s*{"),
           c,
           constructors = "";
@@ -633,29 +656,6 @@
         }
         
         constructors += next + "}\n";
-        rest = prev + allNext.slice(next.length + 1);
-      }
-
-      // Fix class method names
-      // this.collide = function() { ... }
-      rest = (function() {
-        return rest.replace(/(?:public\s+)?processing.\w+ = function (\w+)\((.*?)\)/g, function(all, name, args) {
-          return "ADDMETHOD(this, '" + name + "', (function(public) { return function(" + args + ")";
-        });
-      }());
-
-      var matchMethod = /ADDMETHOD([^,]+, \s*?')([^']*)('[\s\S]*?\{[\s\S]*?\{)/,
-          mc,
-          methods = "",
-          methodsArray = [];
-
-      while ((mc = rest.match(matchMethod))) {
-        var prev = RegExp.leftContext,
-            allNext = RegExp.rightContext,
-            next = nextBrace(allNext);
-
-        methodsArray.push("addMethod" + mc[1] + mc[2] + mc[3] + next + "};})(this));" + "var " + mc[2] + " = this." + mc[2] + ";\n");
-
         rest = prev + allNext.slice(next.length + 1);
       }
 
