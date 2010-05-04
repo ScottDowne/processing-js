@@ -46,4 +46,3 @@ class Spot {
     ellipse(x, y, diameter, diameter);
   }
 }
-
