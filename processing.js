@@ -7694,7 +7694,7 @@
 
       return right.slice(0, position - 1);
     };
-  
+
     // Force characters-as-bytes to work.
     //aCode = aCode.replace(/('(.){1}')/g, "$1.charCodeAt(0)");
     aCode = aCode.replace(/'.{1}'/g, function(all) {
@@ -7752,7 +7752,7 @@
       return "<STRING " + (strings.length - 1) + ">";
     });
 
-    // Windows newlines cause problems: 
+    // Windows newlines cause problems:
     aCode = aCode.replace(/\r\n?/g, "\n");
 
     // Remove multi-line comments
@@ -7769,7 +7769,7 @@
     // the Processing.js source, replace frameRate so it isn't
     // confused with frameRate().
     aCode = aCode.replace(/(\s*=\s*|\(*\s*)frameRate(\s*\)+?|\s*;)/, "$1p.FRAME_RATE$2");
-;
+
     // Simple convert a function-like thing to function
     aCode = aCode.replace(/(?:static )?(\w+(?:\[\])*\s+)(\w+)\s*(\([^\)]*\)\s*\{)/g, function(all, type, name, args) {
       if (name === "if" || name === "for" || name === "while" || type === "public ") {
@@ -7956,19 +7956,19 @@
         if (args[0].match(/^\s*$/)) {
           args.shift();
         }
-        
+
         constructor = "if ( arguments.length === " + args.length + " ) {\n";
 
         for (var i = 0, aLength = args.length; i < aLength; i++) {
           constructor += " var " + args[i] + " = arguments[" + i + "];\n";
         }
-        
+
         constructor += next + "}\n";
 
         constructorsArray.push(constructor);
         rest = prev + allNext.slice(next.length + 1);
       }
-  
+
       var vars = "",
           staticVars = "";
 
@@ -8094,7 +8094,7 @@
           return returnString;
         });
       }());
-    }alert(aCode);
+    }
     return aCode;
   };
 
