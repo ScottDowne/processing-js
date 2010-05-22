@@ -7332,14 +7332,6 @@
     // Class methods
     ////////////////////////////////////////////////////////////////////////////
 
-    p.extendClass = function extendClass(obj, args, fn) {
-      if (arguments.length === 3) {
-        fn.apply(obj, args);
-      } else {
-        args.call(obj);
-      }
-    };
-
     p.addMethod = function addMethod(object, name, fn) {
       if (object[name]) {
         var args = fn.length,
@@ -7678,8 +7670,7 @@
 
   // Parse Processing (Java-like) syntax to JavaScript syntax with Regex
   Processing.parse = function parse(aCode, p) {
-
-    // Function to grab all code in the opening and closing of two characters
+  
     var nextBrace = function(right, openChar, closeChar) {
       var rest = right,
           position = 0,
@@ -7703,7 +7694,7 @@
 
       return right.slice(0, position - 1);
     };
-
+  
     // Force characters-as-bytes to work.
     //aCode = aCode.replace(/('(.){1}')/g, "$1.charCodeAt(0)");
     aCode = aCode.replace(/'.{1}'/g, function(all) {
@@ -7761,7 +7752,7 @@
       return "<STRING " + (strings.length - 1) + ">";
     });
 
-    // Windows newlines cause problems:
+    // Windows newlines cause problems: 
     aCode = aCode.replace(/\r\n?/g, "\n");
 
     // Remove multi-line comments
@@ -7778,24 +7769,24 @@
     // the Processing.js source, replace frameRate so it isn't
     // confused with frameRate().
     aCode = aCode.replace(/(\s*=\s*|\(*\s*)frameRate(\s*\)+?|\s*;)/, "$1p.FRAME_RATE$2");
-
+;
     // Simple convert a function-like thing to function
     aCode = aCode.replace(/(?:static )?(\w+(?:\[\])*\s+)(\w+)\s*(\([^\)]*\)\s*\{)/g, function(all, type, name, args) {
       if (name === "if" || name === "for" || name === "while" || type === "public ") {
         return all;
       } else {
-        return "PROCESSING." + name + " = function " + name + args;
+        return "<FUNCTION> " + name + " = function " + name + args;
       }
     });
 
-    var matchMethod = /PROCESSING\.(\w+ = function \w+\([^\)]*\)\s*\{)/, mc;
+    var matchMethod = /<FUNCTION> (\w+ = function \w+\([^\)]*\)\s*\{)/, mc;
 
     while ((mc = aCode.match(matchMethod))) {
       var prev = RegExp.leftContext,
         allNext = RegExp.rightContext,
         next = nextBrace(allNext, "{", "}");
 
-        aCode = prev + "processing." + mc[1] + next + "};" + allNext.slice(next.length + 1);
+        aCode = prev + "var " + mc[1] + next + "};" + allNext.slice(next.length + 1);
     }
 
     // Delete import statements, ie. import processing.video.*;
@@ -7887,21 +7878,8 @@
     aCode = aCode.replace(/\=\s*\{((.|\s)*?\};)/g, function(all, data) {
       return "= [" + data.replace(/\{/g, "[").replace(/\}/g, "]");
     });
-
-    // super() is a reserved word
-    aCode = aCode.replace(/super\(/g, "superMethod(");
-
-    // Stores the variables and mathods of a single class
-    var SuperClass = function(name){
-      return {
-        className: name,
-        classVariables: "",
-        classFunctions: []
-      };
-    };
-    var arrayOfSuperClasses = [];
-
-    // implements Int1, Int2
+    
+    // implements Int1, Int2 
     aCode = aCode.replace(/implements\s+(\w+\s*(,\s*\w+\s*)*)\s*\{/g, function(all, interfaces) {
       var names = interfaces.replace(/\s+/g, "").split(",");
       return "{ var __psj_interfaces = new ArrayList([\"" + names.join("\", \"") + "\"]);";
@@ -7916,9 +7894,8 @@
       classes.push(name);
 
       // Move arguments up from constructor
-      return "function " + name + "() {\n " +
-              (extend ? "var __self=this;function superMethod(){extendClass(__self,arguments," + extend + ");}\n" : "") +
-              (extend ? "extendClass(this, " + extend + ");\n" : "") +
+      return "function " + name + "() {\n" +
+              (extend ? "  var super = new " + extend + "();\n" : "") +
               "<CLASS " + name + " " + extend + ">";
     };
 
@@ -7934,24 +7911,23 @@
           allRest = RegExp.rightContext,
           rest = nextBrace(allRest, "{", "}"),
           className = m[1],
-          thisSuperClass = new SuperClass(className),
-          extendingClass = m[2];
+          extend = m[2];
 
       allRest = allRest.slice(rest.length + 1);
+
+      // super() is an object, that must be called with new
+      rest = rest.replace(/super\(/g, "super = new "+ extend + "(");
 
       // Fix class method names
       // this.collide = function() { ... }
       rest = (function() {
-        return rest.replace(/(?:public\s+)?processing.\w+ = function (\w+)\(([^\)]*?)\)/g, function(all, name, args) {
-          thisSuperClass.classFunctions.push(name + "|");
-          return "ADDMETHOD(this, '" + name + "', (function(public) { return function(" + args + ")";
+        return rest.replace(/(?:public\s+)?var \w+ = function (\w+)\(([^\)]*?)\)/g, function(all, name, args) {
+          return "ADDMETHOD(this, '" + name + "', function(" + args + ")";
         });
       }());
 
-      var matchMethod = /ADDMETHOD([^,]+, \s*?')([^']*)('[\s\S]*?\{[^\{]*?\{)/,
+      var matchMethod = /ADDMETHOD([^,]+, \s*?')([^']*)('[\s\S]*?\{)/,
           mc,
-          methods = "",
-          publicVars  = "",
           methodsArray = [];
 
       while ((mc = rest.match(matchMethod))) {
@@ -7959,20 +7935,7 @@
             allNext = RegExp.rightContext,
             next = nextBrace(allNext, "{", "}");
 
-        methodsArray.push("addMethod" + mc[1] + mc[2] + mc[3] + next + "};})(this));\n");
-        publicVars += mc[2] + "|";
-
-        if (extendingClass){
-          for (var i = 0, aLength = arrayOfSuperClasses.length; i < aLength; i++){
-            if (extendingClass === arrayOfSuperClasses[i].className){
-              publicVars += arrayOfSuperClasses[i].classVariables;
-              for (var x = 0, fLength = arrayOfSuperClasses[i].classFunctions.length; x < fLength; x++){
-                publicVars += arrayOfSuperClasses[i].classFunctions[x];
-              }
-            }
-          }
-        }
-
+        methodsArray.push("addMethod" + mc[1] + mc[2] + mc[3] + next + "});\nvar " + mc[2] + " = this." + mc[2] + ";\n");
         rest = prev + allNext.slice(next.length + 1);
       }
 
@@ -7993,116 +7956,75 @@
         if (args[0].match(/^\s*$/)) {
           args.shift();
         }
-
+        
         constructor = "if ( arguments.length === " + args.length + " ) {\n";
 
         for (var i = 0, aLength = args.length; i < aLength; i++) {
           constructor += " var " + args[i] + " = arguments[" + i + "];\n";
         }
-
+        
         constructor += next + "}\n";
 
         constructorsArray.push(constructor);
         rest = prev + allNext.slice(next.length + 1);
       }
-
+  
       var vars = "",
-          staticVars = "",
-          localStaticVars = [];
+          staticVars = "";
 
       // Put all member variables into "vars"
       // and keep a list of all public variables
       rest = (function(){
         rest.replace(/(?:final|private|public)?\s*?(?:(static)\s+)?var\s+([^;]*?;)/g, function(all, staticVar, variable) {
-          variable = "this." + variable.replace(/,\s*/g, ";\nthis.")
-            .replace(/this.(\w+);/g, "this.$1 = null;") + '\n';
-
-          publicVars += variable.replace(/\s*this\.(\w+)\s*(;|=).*\s?/g, "$1|");
-          thisSuperClass.classVariables += variable.replace(/\s*this\.(\w+)\s*(;|=).*\s?/g, "$1|");
-
-          if (staticVar === "static"){
+          variable = "var " + variable.replace(/,\s*/g, ";\nvar ")
+            .replace(/var (\w+);/g, "var $1 = null;") + '\n';  
+          variable = variable.replace(/var (\w+)([^;]*?;)/g, function(all, name, rest){
+              return all + "\n" + 
+                     "this.__defineGetter__('" + name + "', function(){ return " + name + "; });\n" +
+                     "this.__defineSetter__('" + name + "', function(val){ " + name + " = val; });\n";             
+          });
+          if (staticVar === 'static') {
             // Fix static methods
-            variable = variable.replace(/this\.(\w+)\s*=\s*([^;]*?;)/g, function(all, sVariable, value){
-              localStaticVars.push(sVariable);
-              value = value.replace(new RegExp("(" + localStaticVars.join("|") + ")", "g"), className + ".$1");
-              staticVars += className + "." + sVariable + " = " + value;
-              return "if (typeof " + className + "." + sVariable + " === 'undefined'){ " + className + "." + sVariable + " = " + value + " }\n" +
-                "this.__defineGetter__('" + sVariable + "', function(){ return "+ className + "." + sVariable + "; });\n" +
-                "this.__defineSetter__('" + sVariable + "', function(val){ " + className + "." + sVariable + " = val; });\n";
+            variable = variable.replace(/var (\w+)\s*=\s*([^;]*?;)/g, function(all, sVariable, value){
+                staticVars += "if (typeof " + className + "." + sVariable + " === 'undefined'){\n" +
+                                all + "\n" + 
+                                className + ".__defineGetter__('" + sVariable + "', function(){ return " + sVariable + "; });\n" +
+                                className + ".__defineSetter__('" + sVariable + "', function(val){ " + sVariable + " = val; });\n" +
+                              "}\n";      
+                return "";
             });
           }
           vars += variable;
           return "";
         });
       }());
-
-
-      // add this. to public variables used inside member functions, and constructors
-      if (publicVars) {
-        // Search functions for public variables
-        for (var i = 0, aLength = methodsArray.length; i < aLength; i++){
-          methodsArray[i] = (function(){
-            return methodsArray[i].replace(/(addMethod.*?\{ return function\((.*?)\)\s*\{)([\s\S]*?)(\};\}\)\(this\)\);)/g, function(all, header, localParams, body, footer) {
-              body = body.replace(/this\./g, "public.");
-              localParams = localParams.replace(/\s*,\s*/g, "|");
-              return header + body.replace(new RegExp("(var\\s+?|\\.)?\\b(" + publicVars.substr(0, publicVars.length-1) + ")\\b", "g"), function (all, first, variable) {
-                if (first === ".") {
-                  return all;
-                } else if (/var\s*?$/.test(first)) {
-                  localParams += "|" + variable;
-                  return all;
-                } else if (localParams && new RegExp("\\b(" + localParams + ")\\b").test(variable)){
-                  return all;
-                } else {
-                  return "public." + variable;
-                }
-              }) + footer;
-            });
-          }());
-        }
-        // Search constructors for public variables
-        for (var i = 0, localParameters = "", aLength = constructorsArray.length; i < aLength; i++){
-          localParameters = "";
-          (function(){
-            constructorsArray[i].replace(/var\s+(\w+) = arguments\[[^\]]\];/g, function(all, localParam){
-              localParameters += localParam + "|";
-            });
-          }());
-          (function(){
-            constructorsArray[i] = constructorsArray[i].replace(new RegExp("(var\\s+?|\\.)?\\b(" + publicVars.substr(0, publicVars.length-1) + ")\\b", "g"), function (all, first, variable) {
-              if (first === ".") {
-                return all;
-              } else if (/var\s*?$/.test(first)) {
-                localParameters += variable + "|";
-                return all;
-              } else if (localParameters && new RegExp("\\b(" + localParameters.substr(0, localParameters.length-1) + ")\\b").test(variable)){
-                return all;
-              } else {
-                return "this." + variable;
-              }
-            });
-          }());
-        }
-      }
-
-      var constructors = "";
-
+    
+      var constructors = "",
+          methods = "";
+    
       for (var i = 0, aLength = methodsArray.length; i < aLength; i++){
         methods += methodsArray[i];
       }
       for (var i = 0, aLength = constructorsArray.length; i < aLength; i++){
         constructors += constructorsArray[i];
       }
-      arrayOfSuperClasses.push(thisSuperClass);
-      rest = vars + "\n" + methods + "\n" + constructors;
+      var superProperties = (extend ?
+              "  var baseProperties = '';\n" +
+              "  for (var propertyName in super) {\n" +
+              "    if (typeof this[propertyName] === 'undefined') {\n" +
+              "      if (typeof super[propertyName] === 'function' || typeof super[propertyName] === 'object') {\n" +
+              "        baseProperties += 'var ' + propertyName + ' = this.' + propertyName + ' = super.' + propertyName + ';';\n" +
+              "      } else {\n" +
+              "        baseProperties += 'var ' + propertyName + ' = super.' + propertyName + ';';\n" +
+              "        baseProperties += 'this.__defineGetter__(\"' + propertyName + '\",function(){return ' + propertyName + ';});';\n" +
+              "        baseProperties += 'this.__defineSetter__(\"' + propertyName + '\",function(v){' + propertyName + '=v;});';\n" +
+              "      }\n" +
+              "    }\n" +
+              "  }\n" +
+              "eval(baseProperties);\n" : "");
+      rest = methods + vars + constructors + superProperties;
       aCode = left + rest + "\n}" + staticVars + allRest;
     }
-
-    // Do some tidying up, where necessary
-    aCode = aCode.replace(/processing.\w+ = function addMethod/g, "addMethod");
-
-    // Remove processing. from leftover functions
-    aCode = aCode.replace(/processing\.((\w+) = function)/g, "$1");
 
     // Check if 3D context is invoked -- this is not the best way to do this.
     if (aCode.match(/size\((?:.+),(?:.+),\s*(OPENGL|P3D)\s*\);/)) {
@@ -8172,7 +8094,7 @@
           return returnString;
         });
       }());
-    }
+    }alert(aCode);
     return aCode;
   };
 
