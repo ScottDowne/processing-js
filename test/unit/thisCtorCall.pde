@@ -20,7 +20,7 @@ class Obj{
 
 Obj obj = new Obj(1);
 
-println(obj.item);
-println(obj.item2);
-println(obj.item3);
+_checkEqual(1, obj.item);
+_checkEqual(2, obj.item2);
+_checkEqual(3, obj.item3);
 

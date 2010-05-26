@@ -8027,9 +8027,6 @@
             return className + ".call(this, ";
           }
         });
-        //className + ".call(this)")
-        constructor = constructor.replace(/\bthis\b\s*\(\)/, className + ".call(this)");
-        constructor = constructor.replace(/\bthis\b\s*\(/, className + ".call(this, ");
 
         constructorsArray.push(constructor);
         rest = prev + allNext.slice(next.length + 1);
