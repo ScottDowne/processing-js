@@ -8018,6 +8018,10 @@
 
         constructor += next + "}\n";
 
+        // Allows the object to call it's own constructor
+        // this( -> className.call(this, 
+        constructor = constructor.replace(/\bthis\b\s*\(/, className + ".call(this, ");
+
         constructorsArray.push(constructor);
         rest = prev + allNext.slice(next.length + 1);
       }
