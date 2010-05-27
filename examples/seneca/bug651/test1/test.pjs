@@ -1,0 +1,35 @@
+int __frameRate = 50;
+int __FRAME_RATE = 100;
+
+void setup() {
+  size(100, 100);
+  background(0);
+
+  int i = frameRate;
+  int frameRate_ = 5;
+  String s = "\"frameRate\"";
+  float _frameRate = 10;
+
+  println("should be 50->" + __frameRate);
+  println(s);
+  println(frameRate);
+  println(_frameRate);
+  println(frameRate_);
+  println("frameRate:" + frameRate);
+  println((frameRate));
+  println((frameRate*2));
+  println(frameRate + func());
+  println(frameRate+(42));
+  println(i);
+  println(FR());
+  println(">" + frameRate + "<");
+}
+
+int func(){
+  return 42;
+}
+
+int FR(){
+  return frameRate;
+}
+
