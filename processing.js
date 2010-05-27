@@ -8019,6 +8019,16 @@
 
         constructor += next + "}\n";
 
+        // Allows the object to call it's own constructor
+        // this( -> className.call(this,
+        constructor = constructor.replace(/\bthis\b\s*\((\))?/, function(all, empty){
+          if (empty === ")") {
+            return className + ".call(this)";
+          } else {
+            return className + ".call(this, ";
+          }
+        });
+
         constructorsArray.push(constructor);
         rest = prev + allNext.slice(next.length + 1);
       }
