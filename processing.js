@@ -8164,7 +8164,7 @@
     });
 
     // Convert 3.0f to just 3.0
-    aCode = aCode.replace(/(\d+)f/g, "$1");
+    aCode = aCode.replace(/(\d+)[fF]/g, "$1");
 
     // replaces all masked strings from <STRING n> to the appropriate string contained in the strings array
     for (var n = 0, sl = strings.length; n < sl; n++) {
