@@ -8028,6 +8028,7 @@
 
       var vars = "",
           staticVars = "",
+          setStaticVars = "",
           localStaticVars = [];
 
       // Put all member variables into "vars"
@@ -8045,9 +8046,10 @@
               localStaticVars.push(sVariable);
               value = value.replace(new RegExp("(" + localStaticVars.join("|") + ")", "g"), className + ".$1");
               staticVars += className + "." + sVariable + " = " + value;
-              return "if (typeof " + className + "." + sVariable + " === 'undefined'){ " + className + "." + sVariable + " = " + value + " }\n" +
+              setStaticVars += "if (typeof " + className + "." + sVariable + " === 'undefined'){ " + className + "." + sVariable + " = " + value + " }\n" +
                 "this.__defineGetter__('" + sVariable + "', function(){ return "+ className + "." + sVariable + "; });\n" +
                 "this.__defineSetter__('" + sVariable + "', function(val){ " + className + "." + sVariable + " = val; });\n";
+              return "";
             });
           }
           vars += variable;
@@ -8103,6 +8105,14 @@
             });
           }());
         }
+        // Search member variables for public variables
+        vars = vars.replace(new RegExp("(var\\s+?|\\.)?\\b(" + publicVars.substr(0, publicVars.length-1) + ")\\b", "g"), function (all, first, variable) {
+          if (first === ".") {
+            return all;
+          } else {
+            return "this." + variable;
+          }
+        });
       }
 
       var constructors = "";
@@ -8124,7 +8134,7 @@
       }
       arrayOfSuperClasses.push(thisSuperClass);
 
-      rest = vars + "\n" + methods + "\n" + constructors;
+      rest = vars + setStaticVars + "\n" + methods + "\n" + constructors;
       aCode = left + rest + "\n}" + staticVars + allRest;
     }
 
