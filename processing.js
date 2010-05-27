@@ -7791,7 +7791,7 @@
     aCode = aCode.replace(/(\s*=\s*|\(*\s*)frameRate(\s*\)+?|\s*;)/, "$1p.FRAME_RATE$2");
 
     // Simple convert a function-like thing to function
-    aCode = aCode.replace(/(?:static )?(\w+(?:\[\])*\s+)(\w+)\s*(\([^\)]*\)\s*\{)/g, function(all, type, name, args) {
+    aCode = aCode.replace(/(?:\bstatic )?(\w+(?:\[\])*\s+)(\w+)\s*(\([^\)]*\)\s*\{)/g, function(all, type, name, args) {
       if (name === "if" || name === "for" || name === "while" || type === "public ") {
         return all;
       } else {
@@ -7811,13 +7811,13 @@
 
     // Delete import statements, ie. import processing.video.*;
     // https://processing-js.lighthouseapp.com/projects/41284/tickets/235-fix-parsing-of-java-import-statement
-    aCode = aCode.replace(/import\s+(.+);/g, "");
+    aCode = aCode.replace(/\bimport\s+(.+);/g, "");
 
     //replace  catch (IOException e) to catch (e)
-    aCode = aCode.replace(/catch\s*\(\W*\w*\s+(\w*)\W*\)/g, "catch ($1)");
+    aCode = aCode.replace(/\bcatch\b\s*\(\W*\w*\s+(\w*)\W*\)/g, "catch ($1)");
 
     //delete  the multiple catch block
-    var catchBlock = /(catch[^\}]*\})\W*catch[^\}]*\}/;
+    var catchBlock = /(\bcatch\b[^\}]*\})\W*\bcatch\b[^\}]*\}/;
 
     while (catchBlock.test(aCode)) {
       aCode = aCode.replace(new RegExp(catchBlock), "$1");
@@ -7829,7 +7829,7 @@
 
     // changes pixels[n] into pixels.getPixels(n)
     // and pixels[n] = n2 into pixels.setPixels(n, n2)
-    var matchPixels = /pixels\s*\[/,
+    var matchPixels = /\bpixels\s*\[/,
         mp;
 
     while ((mp = aCode.match(matchPixels))) {
@@ -7851,11 +7851,11 @@
       aCode = left + "pixels." + getOrSet + "(" + rest + ")" + allRest;
     }
 
-    // changes pixel.length to pixels.getLength()
-    aCode = aCode.replace(/pixels.length/g, "pixels.getLength()");
+    // changes pixels.length to pixels.getLength()
+    aCode = aCode.replace(/\bpixels\.length\b/g, "pixels.getLength()");
 
     // Force .length() to be .length
-    aCode = aCode.replace(/\.length\(\)/g, ".length");
+    aCode = aCode.replace(/\.length\s*\(\)/g, ".length");
 
     // foo( int foo, float bar )
     aCode = aCode.replace(/([\(,]\s*)(\w+)((?:\[\])+|\s+)\s*(\w+\s*[\),])/g, "$1$4");
@@ -7871,7 +7871,7 @@
     });
 
     // What does this do? This does the same thing as "Fix Array[] foo = {...} to [...]" below
-    aCode = aCode.replace(/(?:static\s+)?\w+\[\]\s*(\w+)\[?\]?\s*=\s*\{.*?\};/g, function(all) {
+    aCode = aCode.replace(/(?:\bstatic\s+)?\w+\[\]\s*(\w+)\[?\]?\s*=\s*\{.*?\};/g, function(all) {
       return all.replace(/\{/g, "[").replace(/\}/g, "]");
     });
 
@@ -7910,13 +7910,13 @@
     var arrayOfSuperClasses = [];
 
     // implements Int1, Int2
-    aCode = aCode.replace(/implements\s+(\w+\s*(,\s*\w+\s*)*)\s*\{/g, function(all, interfaces) {
+    aCode = aCode.replace(/\bimplements\s+(\w+\s*(,\s*\w+\s*)*)\s*\{/g, function(all, interfaces) {
       var names = interfaces.replace(/\s+/g, "").split(",");
       return "{ var __psj_interfaces = new ArrayList([\"" + names.join("\", \"") + "\"]);";
     });
 
     // Simply turns an interface into a class
-    aCode = aCode.replace(/interface/g, "class");
+    aCode = aCode.replace(/\binterface\b/g, "class");
 
     var classes = ["int", "float", "boolean", "String", "byte", "double", "long", "ArrayList"];
 
@@ -8011,8 +8011,8 @@
           constructor += " var " + args[i] + " = arguments[" + i + "];\n";
         }
         
-        if (/super\s*\(/.test(next)) {
-          next = next.replace(/super\s*\(/g, "superConstructor(");
+        if (/\bsuper\s*\(/.test(next)) {
+          next = next.replace(/\bsuper\s*\(/g, "superConstructor(");
         } else if (extendingClass) {
           constructor += "superConstructor();\n";
         }
@@ -8035,13 +8035,13 @@
       rest = (function(){
         rest.replace(/(?:final|private|public)?\s*?(?:(static)\s+)?var\s+([^;]*?;)/g, function(all, staticVar, variable) {
           variable = "this." + variable.replace(/,\s*/g, ";\nthis.");
-          variable = variable.replace(/this.(\w+);/g, "this.$1 = null;") + '\n';
-          publicVars += variable.replace(/\s*this\.(\w+)\s*(;|=).*\s?/g, "$1|");
+          variable = variable.replace(/\bthis\.(\w+);/g, "this.$1 = null;") + '\n';
+          publicVars += variable.replace(/\s*\bthis\.(\w+)\s*(;|=).*\s?/g, "$1|");
           thisSuperClass.classVariables += variable.replace(/\s*this\.(\w+)\s*(;|=).*\s?/g, "$1|");
 
           if (staticVar === "static"){
             // Fix static methods
-            variable = variable.replace(/this\.(\w+)\s*=\s*([^;]*?;)/g, function(all, sVariable, value){
+            variable = variable.replace(/\bthis\.(\w+)\s*=\s*([^;]*?;)/g, function(all, sVariable, value){
               localStaticVars.push(sVariable);
               value = value.replace(new RegExp("(" + localStaticVars.join("|") + ")", "g"), className + ".$1");
               staticVars += className + "." + sVariable + " = " + value;
@@ -8062,7 +8062,7 @@
         for (var i = 0, aLength = methodsArray.length; i < aLength; i++){
           methodsArray[i] = (function(){
             return methodsArray[i].replace(/(addMethod.*?\{ return function\((.*?)\)\s*\{)([\s\S]*?)(\};\}\)\(this\)\);)/g, function(all, header, localParams, body, footer) {
-              body = body.replace(/this\./g, "public.");
+              body = body.replace(/\bthis\./g, "public.");
               localParams = localParams.replace(/\s*,\s*/g, "|");
               return header + body.replace(new RegExp("(var\\s+?|\\.)?\\b(" + publicVars.substr(0, publicVars.length-1) + ")\\b", "g"), function (all, first, variable) {
                 if (first === ".") {
@@ -8075,7 +8075,7 @@
                 } else {
                   return "public." + variable;
                 }
-              }).replace(/public\.(\w+\s*\()/g, "this.$1") + footer;
+              }).replace(/\bpublic\.(\w+\s*\()/g, "this.$1") + footer;
               
             });
           }());
