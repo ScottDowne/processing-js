@@ -7856,8 +7856,8 @@
     aCode = aCode.replace(/\.length\(\)/g, ".length");
 
     // foo( int foo, float bar )
-    aCode = aCode.replace(/([\(,]\s*)(\w+)((?:\[\])+|\s+)\s*(\w+\s*[\),])/g, "$1$4");
-    aCode = aCode.replace(/([\(,]\s*)(\w+)((?:\[\])+|\s+)\s*(\w+\s*[\),])/g, "$1$4");
+    aCode = aCode.replace(/([\(,]\s*)(\w+)((?:\[\])+|\s+)\s*(\w+)(?:\[\])*?\s*([\),])/g, "$1$4$5");
+    aCode = aCode.replace(/([\(,]\s*)(\w+)((?:\[\])+|\s+)\s*(\w+)(?:\[\])*?\s*([\),])/g, "$1$4$5");
 
     // float[] foo = new float[5];
     aCode = aCode.replace(/new\s+(\w+)\s*((?:\[(?:[^\]]*)\])+)\s*(\{[^;]*\}\s*;)*/g, function(all, name, args, initVars) {
@@ -7916,7 +7916,7 @@
     // Simply turns an interface into a class
     aCode = aCode.replace(/interface/g, "class");
 
-    var classes = ["int", "float", "boolean", "String", "byte", "double", "long", "ArrayList"];
+    var classes = ["int", "float", "boolean", "String", "byte", "double", "long", "ArrayList", "PVector", "PrintWriter", "BufferedReader", "PImage", "PGraphics", "PFont", "PShape"];
 
     var classReplace = function(all, name, extend) {
       classes.push(name);
