@@ -7785,18 +7785,20 @@
       if (name === "if" || name === "for" || name === "while" || type === "public ") {
         return all;
       } else {
-        return "PROCESSING." + name + " = function " + name + args;
+        return "PROCESSING." + name + " = FUNCTION " + name + args;
       }
     });
 
-    var matchMethod = /PROCESSING\.(\w+ = function \w+\([^\)]*\)\s*\{)/, mc;
+    var matchMethod = /PROCESSING\.(\w+) = FUNCTION \w+(\([^\)]*\)\s*\{)/, mc;
 
     while ((mc = aCode.match(matchMethod))) {
       var prev = RegExp.leftContext,
         allNext = RegExp.rightContext,
-        next = nextBrace(allNext, "{", "}");
+        next = nextBrace(allNext, "{", "}"),
+        name = mc[1],
+        params = mc[2];
 
-        aCode = prev + "processing." + mc[1] + next + "};" + allNext.slice(next.length + 1);
+        aCode = prev + "processing." + name + " = function " + params + next + "};" + allNext.slice(next.length + 1);
     }
 
     // Delete import statements, ie. import processing.video.*;
@@ -7943,7 +7945,7 @@
       // Fix class method names
       // this.collide = function() { ... }
       rest = (function() {
-        return rest.replace(/(?:public\s+)?processing.\w+ = function (\w+)\(([^\)]*?)\)/g, function(all, name, args) {
+        return rest.replace(/(?:public\s+)?processing.(\w+) = function \(([^\)]*?)\)/g, function(all, name, args) {
           thisSuperClass.classFunctions.push(name + "|");
           return "ADDMETHOD(this, '" + name + "', (function(public) { return function(" + args + ")";
         });
