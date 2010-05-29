@@ -7995,10 +7995,10 @@
           args.shift();
         }
 
-        constructor = "if ( arguments.length === " + args.length + " ) {\n";
+        constructor = "if ( args.length === " + args.length + " ) {\n";
 
         for (var i = 0, aLength = args.length; i < aLength; i++) {
-          constructor += " var " + args[i] + " = arguments[" + i + "];\n";
+          constructor += " var " + args[i] + " = args[" + i + "];\n";
         }
         
         if (/super\s*\(/.test(next)) {
@@ -8079,7 +8079,7 @@
             });
           }());
           (function(){
-            constructorsArray[i] = constructorsArray[i].replace(new RegExp("(var\\s+?|\\.)?\\b(" + publicVars.substr(0, publicVars.length-1) + ")\\b", "g"), function (all, first, variable) {
+            constructorsArray[i] = constructorsArray[i].replace(/\bthis\./g, "__this__.").replace(new RegExp("(var\\s+?|\\.)?\\b(" + publicVars.substr(0, publicVars.length-1) + ")\\b", "g"), function (all, first, variable) {
               if (first === ".") {
                 return all;
               } else if (/var\s*?$/.test(first)) {
@@ -8088,21 +8088,22 @@
               } else if (localParameters && new RegExp("\\b(" + localParameters.substr(0, localParameters.length-1) + ")\\b").test(variable)){
                 return all;
               } else {
-                return "this." + variable;
+                return "__this__." + variable;
               }
             });
           }());
         }
       }
 
-      var constructors = "";
-
+      // Loop through constructors adding them to a string, contained inside a closure
+      var constructors = "(function(args) {";
       for (var i = 0, aLength = methodsArray.length; i < aLength; i++){
         methods += methodsArray[i];
       }
       for (var i = 0, aLength = constructorsArray.length; i < aLength; i++){
         constructors += constructorsArray[i];
       }
+      constructors += "})(arguments);";
 
       if (extendingClass) {
         for (var i = 0, aLength = arrayOfSuperClasses.length; i < aLength; i++){
