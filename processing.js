@@ -7879,14 +7879,9 @@
       }
     });
 
-    // What does this do? This does the same thing as "Fix Array[] foo = {...} to [...]" below
-    //aCode = aCode.replace(/(?:static\s+)?\w+(\[\])+\s*(\w+)(\[\])+\s*=\s*\{.*?\};/g, function(all) {
-    //  return all.replace(/\{/g, "[").replace(/\}/g, "]");
-    //});
-
     // Fix Array[] foo = {...} to [...]
-    aCode = aCode.replace(/\=\s*\{((.|\s)*?\};)/g, function(all, data) {
-      return "= [" + data.replace(/\{/g, "[").replace(/\}/g, "]");
+    aCode = aCode.replace(/\=\s*\{(.|\s)*?\};/g, function(all) {
+      return all.replace(/\{/g, "[").replace(/\}/g, "]");
     });
 
     // var i, j; --> var i;\nvar j;
