@@ -7599,7 +7599,7 @@
       var localizedProperties = "";
       for (var propertyName in p) {
         localizedProperties += "var " + propertyName + "=__p__." + propertyName + ";";
-        if (typeof p[propertyName] !== "function" || typeof p[propertyName] !== "object") {
+        if (typeof p[propertyName] !== "function") {
           localizedProperties += "__p__.__defineGetter__('" + propertyName + "',function(){return " + propertyName + ";});" +
                                  "__p__.__defineSetter__('" + propertyName + "',function(v){" + propertyName + "=v;});";
         }
