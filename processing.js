@@ -7856,13 +7856,8 @@
       if (initVars) {
         return initVars.replace(/\{/g, "[").replace(/\}/g, "]");
       } else {
-        return "new ArrayList(" + args.replace(/\[\]/g, "[0]").slice(1, -1).split("][").join(", ") + ");";
+        return "new ArrayList(" + args.replace(/\[\]/g, "[0]").slice(1, -1).split("][").join(", ") + ")";
       }
-    });
-
-    // What does this do? This does the same thing as "Fix Array[] foo = {...} to [...]" below
-    aCode = aCode.replace(/(?:static\s+)?\w+\[\]\s*(\w+)\[?\]?\s*=\s*\{.*?\};/g, function(all) {
-      return all.replace(/\{/g, "[").replace(/\}/g, "]");
     });
 
     // int|float foo;
@@ -7875,7 +7870,7 @@
       }());
     }
 
-    // float foo = 5;
+    // float foo = 5; --> var foo 5;
     aCode = aCode.replace(/(?:final\s+)?(\w+)((?:\[\s*\])+|\s)\s*(\w+)\[?\]?(\s*[=,;])/g, function(all, type, arr, name, sep) {
       if (type === "return" || type === "else") {
         return all;
@@ -7884,10 +7879,49 @@
       }
     });
 
+    // What does this do? This does the same thing as "Fix Array[] foo = {...} to [...]" below
+    //aCode = aCode.replace(/(?:static\s+)?\w+(\[\])+\s*(\w+)(\[\])+\s*=\s*\{.*?\};/g, function(all) {
+    //  return all.replace(/\{/g, "[").replace(/\}/g, "]");
+    //});
+
     // Fix Array[] foo = {...} to [...]
     aCode = aCode.replace(/\=\s*\{((.|\s)*?\};)/g, function(all, data) {
       return "= [" + data.replace(/\{/g, "[").replace(/\}/g, "]");
     });
+
+    // var i, j; --> var i;\nvar j;
+    aCode = aCode.replace(/var (\w+)([^;]*);/g, function(all, name, rest) {
+      var inBrackets = false,
+          bracketCount = 0,
+          replace = "",
+          start = 0;
+
+      for(var i = 0, rL = rest.length; i < rL; i++) {
+        if (!inBrackets) {
+          if (rest.charAt(i) === "(" || rest.charAt(i) === "[") {
+            inBrackets = true;
+          } else if (rest.charAt(i) === ",") {
+            rest = rest.slice(0, i) + " " + rest.slice(i+1);
+            replace += rest.slice(start, i) + ";\nvar ";
+            start = i;
+          }
+        } else {
+          if (rest.charAt(i) === "(" || rest.charAt(i) === "[") {
+            bracketCount++;
+          } else if (rest.charAt(i) === ")" || rest.charAt(i) === "]") {
+            if (bracketCount < 1) {
+              inBrackets = false;
+            } else {
+              bracketCount--;
+            }
+          }
+        }
+      }
+      replace += rest.slice(start);
+      return "var " + name + replace + ";";
+    });
+  
+    aCode = aCode.replace(/(var\s+\w+)(\[\])*/g, "$1");
 
     // Stores the variables and mathods of a single class
     var SuperClass = function(name){
@@ -8024,7 +8058,7 @@
       // and keep a list of all public variables
       rest = (function(){
         rest.replace(/(?:final|private|public)?\s*?(?:(static)\s+)?var\s+([^;]*?;)/g, function(all, staticVar, variable) {
-          variable = "this." + variable.replace(/,\s*/g, ";\nthis.");
+          variable = "this." + variable;
           variable = variable.replace(/this.(\w+);/g, "this.$1 = null;") + '\n';
           publicVars += variable.replace(/\s*this\.(\w+)\s*(;|=).*\s?/g, "$1|");
           thisSuperClass.classVariables += variable.replace(/\s*this\.(\w+)\s*(;|=).*\s?/g, "$1|");
