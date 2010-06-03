@@ -7135,27 +7135,27 @@
     // Print some text to the Canvas
     p.text = function text() {
       if (typeof arguments[0] !== 'undefined') {
-        var str = arguments[0],
-          x, y, z, pos, width, height;
-
-        if (typeof str === 'number' && (str + "").indexOf('.') >= 0) {
-          // Make sure .15 rounds to .1, but .151 rounds to .2.
-          if ((str * 1000) - Math.floor(str * 1000) === 0.5) {
-            str = str - 0.0001;
-          }
-          str = str.toFixed(3);
-        }
-
-        str = str.toString();
 
         if (arguments.length === 1) { // for text( str )
-          p.text(str, lastTextPos[0], lastTextPos[1]);
+          p.text(arguments[0], lastTextPos[0], lastTextPos[1]);
         } else if (arguments.length === 3) { // for text( str, x, y)
-          text(str, arguments[1], arguments[2], 0);
+          p.text(arguments[0], arguments[1], arguments[2], 0);
         } else if (arguments.length === 4) { // for text( str, x, y, z)
-          x = arguments[1];
-          y = arguments[2];
-          z = arguments[3];
+          var str = arguments[0],
+              x = arguments[1],
+              y = arguments[2],
+              z = arguments[3],
+              pos, width, height;
+
+          if (typeof str === 'number' && (str + "").indexOf('.') >= 0) {
+            // Make sure .15 rounds to .1, but .151 rounds to .2.
+            if ((str * 1000) - Math.floor(str * 1000) === 0.5) {
+              str = str - 0.0001;
+            }
+            str = str.toFixed(3);
+          }
+
+          str = str.toString();
 
           do {
             pos = str.indexOf("\n");
@@ -7222,13 +7222,14 @@
           lastTextPos[1] = y;
           lastTextPos[2] = z;
         } else if (arguments.length === 5) { // for text( str, x, y , width, height)
-          text(str, arguments[1], arguments[2], arguments[3], arguments[4], 0);
+          text(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4], 0);
         } else if (arguments.length === 6) { // for text( stringdata, x, y , width, height, z)
-          x = arguments[1];
-          y = arguments[2];
-          width = arguments[3];
-          height = arguments[4];
-          z = arguments[5];
+          var str = arguments[0],
+              x = arguments[1],
+              y = arguments[2],
+              width = arguments[3],
+              height = arguments[4],
+              z = arguments[5];
 
           if (str.length > 0) {
             if (curTextSize > height) {
@@ -7288,7 +7289,7 @@
             }
 
           } // end str != ""
-        } // end arguments.length == 6
+        } // end arguments.length === 6
       }
     };
 
