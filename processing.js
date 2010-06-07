@@ -3,7 +3,7 @@
     P R O C E S S I N G . J S - @VERSION@
     a port of the Processing visualization language
 
-    License       : MIT
+    License       : MIThttp://github.com/ScottDowne/processing-js/commits/677
     Developer     : John Resig: http://ejohn.org
     Web Site      : http://processingjs.org
     Java Version  : http://processing.org
@@ -7007,7 +7007,7 @@
                 width += parseFloat(p.glyphLook(p.glyphTable[name], str[i]).horiz_adv_x);
               }
               catch(e) {
-                Processing.debug(e);
+                p.debug(e);
               }
             }
             return width / p.glyphTable[name].units_per_em;
@@ -7128,7 +7128,7 @@
           return font[chr];
         }
       } catch(e) {
-        Processing.debug(e);
+        p.debug(e);
       }
     };
 
@@ -7203,7 +7203,7 @@
               try {
                 p.glyphLook(font, str[i]).draw();
               } catch(e) {
-                Processing.debug(e);
+                p.debug(e);
               }
             }
             curContext.restore();
@@ -7448,7 +7448,7 @@
           xmlDoc = document.implementation.createDocument("", "", null);
         }
         catch(e_fx_op) {
-          Processing.debug(e_fx_op.message);
+          p.debug(e_fx_op.message);
           return;
         }
 
@@ -7459,7 +7459,7 @@
         }
         catch(e_sf_ch) {
           // Google Chrome, Safari etc.
-          Processing.debug(e_sf_ch);
+          p.debug(e_sf_ch);
           try {
             var xmlhttp = new window.XMLHttpRequest();
             xmlhttp.open("GET", url, false);
@@ -7467,7 +7467,7 @@
             parseSVGFont(xmlhttp.responseXML.documentElement);
           }
           catch(e) {
-            Processing.debug(e_sf_ch);
+            p.debug(e_sf_ch);
           }
         }
       };
