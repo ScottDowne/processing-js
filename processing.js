@@ -3,7 +3,7 @@
     P R O C E S S I N G . J S - @VERSION@
     a port of the Processing visualization language
 
-    License       : MIThttp://github.com/ScottDowne/processing-js/commits/677
+    License       : MIT
     Developer     : John Resig: http://ejohn.org
     Web Site      : http://processingjs.org
     Java Version  : http://processing.org
