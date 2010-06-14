@@ -8506,9 +8506,6 @@
       }
     });
 
-    // Place-holder for debugging function
-    p.debug = function(e) {};
-
     // Get the DOM element if string was passed
     if (typeof curElement === "string") {
       curElement = document.getElementById(curElement);
@@ -8584,6 +8581,9 @@
 
   // Share lib space
   Processing.lib = {};
+
+  // Place-holder for debugging function
+  Processing.debug = function(e) {};
 
   // Processing global methods and constants for the parser
   function getGlobalMembers() {
