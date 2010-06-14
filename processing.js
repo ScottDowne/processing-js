@@ -5387,14 +5387,6 @@
     // Vector drawing functions
     ////////////////////////////////////////////////////////////////////////////
 
-    p.Point = function Point(x, y) {
-      this.x = x;
-      this.y = y;
-      this.copy = function() {
-        return new Point(x, y);
-      };
-    };
-
     p.point = function point(x, y, z) {
       if (p.use3DContext) {
         var model = new PMatrix3D();
@@ -8863,7 +8855,7 @@
   "mouseY","MOVE","MULTIPLY","nf","nfc","nfp","nfs","noCursor","NOCURSOR","noFill","noise","noiseDetail","noiseSeed",
   "noLights","noLoop","norm","normal","NORMAL_MODE_AUTO","NORMAL_MODE_SHAPE","NORMAL_MODE_VERTEX",
   "noSmooth","noStroke","noTint","OPAQUE","OPENGL","OVERLAY","P3D","peg","perspective","PI","PImage","pixels",
-  "pmouseX","pmouseY","point","Point","pointLight","POINTS","POLYGON","popMatrix","popStyle","POSTERIZE",
+  "pmouseX","pmouseY","point","pointLight","POINTS","POLYGON","popMatrix","popStyle","POSTERIZE",
   "pow","PREC_ALPHA_SHIFT","PRECISIONB","PRECISIONF","PREC_MAXVAL","PREC_RED_SHIFT","print",
   "printCamera","println","printMatrix","printProjection","PROJECT","pushMatrix","pushStyle",
   "PVector","quad","QUADS","QUAD_STRIP","radians","RADIUS","random","Random","randomSeed", "rect",
