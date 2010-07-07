@@ -2249,6 +2249,9 @@
         array.toArray = function() {
           return this.slice(0);
         };
+        array.set = function(index, item) {
+          return this.splice(index, 1, item);
+        };
 
         return array;
       };
