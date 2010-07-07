@@ -2228,8 +2228,9 @@
         array.contains = function(item) {
           return this.indexOf(item) !== -1;
         };
-        array.add = function(item) {
-          return this.push(item);
+        array.add = function(index, item) {
+          item || (item = index) && (index = this.length);
+          return this.splice(index, 0, item);
         };
         array.size = function() {
           return this.length;
