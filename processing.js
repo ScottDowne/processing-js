@@ -413,6 +413,7 @@
         curTint = function() {},
         curTextSize = 12,
         curTextFont = "Arial",
+        curTextLeading = 0,
         getLoaded = false,
         start = new Date().getTime(),
         timeSinceLastFPS = start,
@@ -10053,6 +10054,7 @@
     p.textSize = function textSize(size) {
       if (size) {
         curTextSize = size;
+        curTextLeading = (p.textAscent() + p.textDescent()) * 1.275;
       }
     };
 
@@ -10063,6 +10065,18 @@
         horizontalTextAlignment = arguments[0];
         verticalTextAlignment = arguments[1];
       }
+    };
+
+    p.textAscent = function textAscent() {
+      return Math.ceil(curTextSize * 0.928223);
+    };
+
+    p.textDescent = function textDescent() {
+      return Math.ceil(curTextSize * 0.23584);
+    };
+
+    p.textLeading = function textLeading(leading) {
+      curTextLeading = leading;
     };
 
     p.textWidth = function textWidth(str) {
@@ -10354,18 +10368,18 @@
       
       var yOffset;
       if(verticalTextAlignment === p.TOP) {
-        yOffset = (1-baselineOffset) * curTextSize;
+        yOffset = p.textAscent();
       } else if(verticalTextAlignment === p.CENTER) {
-        yOffset = (1-baselineOffset - linesCount/2) * curTextSize;
+        yOffset = (0.8 - linesCount/2) * curTextLeading;
       } else if(verticalTextAlignment === p.BOTTOM) {
-        yOffset = (1-baselineOffset - linesCount) * curTextSize;
+        yOffset = (0.825 - linesCount) * curTextLeading;
       } else { //  if(verticalTextAlignment === p.BASELINE) {
-        yOffset = (1 - linesCount) * curTextSize;
+        yOffset = 0;
       }
       for(var i=0;i<linesCount;++i) {
         var line = lines[i];        
         lineFunction(line, x, y + yOffset, z, horizontalTextAlignment);
-        yOffset += curTextSize;
+        yOffset += curTextLeading;
       }
     }
 
@@ -10377,30 +10391,28 @@
         return;
       }
 
-      var spaceMark = -1;
-      var start = 0;
-      var lineWidth = 0;
-      var textboxWidth = width;
-
-      var yOffset = 0;
-
       curContext.font = curTextSize + "px " + curTextFont.name;
 
-      var drawCommands = [];
-      var hadSpaceBefore = false;
+      var spaceMark      = -1,
+          start          = 0,
+          lineWidth      = 0,
+          textboxWidth   = width,
+          yOffset        = 0,
+          drawCommands   = [],
+          hadSpaceBefore = false,
+          letterWidth    = 0;
+
       for (var j=0, len=str.length; j < len; j++) {
-        var currentChar = str[j];
-        var letterWidth;
 
         if ("fillText" in curContext) {
-          letterWidth = curContext.measureText(currentChar).width;
+          letterWidth = curContext.measureText(str[j]).width;
         } else if ("mozDrawText" in curContext) {
-          letterWidth = curContext.mozMeasureText(currentChar);
+          letterWidth = curContext.mozMeasureText(str[j]);
         }
 
-        if (currentChar !== "\n" && (currentChar === " " || (hadSpaceBefore && str[j + 1] === " ") ||
+        if (str[j] !== "\n" && (str[j] === " " || (hadSpaceBefore && str[j + 1] === " ") ||
             lineWidth + 2 * letterWidth < textboxWidth)) { // check a line of text
-          if (currentChar === " ") {
+          if (str[j] === " ") {
             spaceMark = j;
           }
           lineWidth += letterWidth;
@@ -10410,23 +10422,27 @@
           }
 
           if (str[j] === "\n") {
-            drawCommands.push({text:str.substring(start, j), width: lineWidth, offset: yOffset});
+            if (!/^\s*$/.test(str.substring(start, j))) {
+              drawCommands.push({text:str.substring(start, j), width: lineWidth, offset: yOffset});
+              yOffset += curTextLeading;
+            }
             start = j + 1;
           } else {
-            drawCommands.push({text:str.substring(start, spaceMark + 1), width: lineWidth, offset: yOffset});
+            if (!/^\s*$/.test(str.substring(start, spaceMark + 1))) {
+              drawCommands.push({text:str.substring(start, spaceMark + 1), width: lineWidth, offset: yOffset});
+              yOffset += curTextLeading;
+            }
             start = spaceMark + 1;
           }
-          yOffset += curTextSize;
-
           lineWidth = 0;
           j = start - 1;
         }
-        hadSpaceBefore = currentChar === " ";
+        hadSpaceBefore = str[j] === " ";
       } // for (var j=
 
       if (start < len) { // draw the last line
         drawCommands.push({text:str.substring(start), width: lineWidth, offset: yOffset});
-        yOffset += curTextSize;
+        yOffset += curTextLeading;
       }
 
       // actual draw
@@ -10451,10 +10467,10 @@
         if(command.offset + boxYOffset2 < 0) {
           continue; // skip if not inside box yet
         }
-        if(command.offset + boxYOffset2 + curTextSize > height) {
+        if(command.offset + boxYOffset2 + curTextLeading > height) {
           break; // stop if no enough space for one more line draw
         }
-        lineFunction(command.text, x + xOffset, y + command.offset + boxYOffset1 + boxYOffset2, 
+        lineFunction(command.text, x + xOffset, y + command.offset + boxYOffset1 + boxYOffset2,
                      z, horizontalTextAlignment);
       }
     }
@@ -11090,7 +11106,7 @@
   "second","set","setup","shape", "shapeMode","shared","SHIFT","shininess","shorten","sin","SINCOS_LENGTH","size",
   "smooth","SOFT_LIGHT","sort","specular","sphere","sphereDetail","splice","split","splitTokens",
   "spotLight","sq","sqrt","SQUARE","status","str","stroke","strokeCap","strokeJoin","strokeWeight",
-  "subset","SUBTRACT","TAB","tan","text","TEXT","textAlign","textAscent","textDescent","textFont",
+  "subset","SUBTRACT","TAB","tan","text","TEXT","textAlign","textAscent","textDescent","textFont","textLeading",
   "textSize","textureMode","texture","textWidth","THRESHOLD","tint", "TOP",
   "translate","triangle","TRIANGLE_FAN","TRIANGLES","TRIANGLE_STRIP","trim","TWO_PI","unbinary",
   "unhex","UP","updatePixels","use3DContext","vertex","WAIT","width","XMLAttrbute","XMLElement","year",
