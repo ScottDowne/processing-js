@@ -10065,6 +10065,10 @@
       }
     };
 
+    p.textAscent = function textAscent() {
+      return Math.ceil(curTextSize * 0.928223);
+    };
+
     p.textWidth = function textWidth(str) {
       if(p.use3DContext){
         if(textcanvas === undef){
