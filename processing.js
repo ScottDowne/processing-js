@@ -10065,6 +10065,10 @@
       }
     };
 
+    p.textDescent = function textDescent() {
+      return Math.ceil(curTextSize * 0.23584);
+    };
+
     p.textWidth = function textWidth(str) {
       if(p.use3DContext){
         if(textcanvas === undef){
